@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres-exporter
+  labels:
+    {{- include "hw3-chart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.postgres_exporter.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "hw3-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+      {{- end }}
+      labels:
+        {{- include "hw3-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-postgres-exporter
+          image: "{{ .Values.postgres_exporter.image.repository }}:{{ .Values.postgres_exporter.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.postgres_exporter.image.pullPolicy }}
+          env:
+            - name: DATA_SOURCE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret-postgres-exporter
+                  key: DATABASE_URI_EXPORTER
+          ports:
+            - name: db-metrics
+              containerPort: 9187
+              protocol: TCP

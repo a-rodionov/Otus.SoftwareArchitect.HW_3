@@ -1,0 +1,20 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-postgres-exporter
+  labels:
+    {{- include "hw3-chart.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ .Release.Name }}-postgres-exporter
+  namespaceSelector:
+    matchNames:
+    - "{{ $.Release.Namespace }}"
+  selector:
+    matchLabels:
+      {{- include "hw3-chart.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - interval: 30s
+    port: db-metrics
+    path: /metrics
+{{- end }}
